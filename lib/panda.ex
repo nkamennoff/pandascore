@@ -22,7 +22,8 @@ defmodule Panda do
     - name: match name
   """
   def upcoming_matches(page \\ 1, per_page \\ 5) do
-    Logger.info "retrieving upcoming #{per_page} matches starting at #{page} with crendential #{get_token()}"
+    Logger.info "retrieving upcoming [#{per_page}] matches starting at [#{page}]"
+    Logger.debug "querying /matches/upcoming using token [#{get_token()}]"
     try do
       for match <- Api.get!("/matches/upcoming?page=#{page}&per_page=#{per_page}&token=#{get_token()}").body do
         Map.take(match, @upcoming_fields)
@@ -35,8 +36,18 @@ defmodule Panda do
   @doc """
   return odds for the given match
   """
-  def odds_for_match(match) do
-    "odds for the match #{match}"
+  def odds_for_match(match_id) do
+    Logger.info "getting odds for the match #{match_id}"
+    get_match_opponents(match_id)
+  end
+
+  defp get_match_opponents(match_id) do
+    Logger.debug "querying /matches/#{match_id} using token [#{get_token()}]"
+    match = Api.get!("/matches/#{match_id}?token=#{get_token()}").body
+
+    for opponent <- match["opponents"] do
+      Team.new(opponent["opponent"]["name"], opponent["opponent"]["id"])
+    end
   end
 
   defp get_token() do
