@@ -33,19 +33,31 @@ defmodule Panda do
   end
 
   @doc """
-  return odds for the given match
+  return odds for the given match.
   """
   def odds_for_match(match_id) do
     Logger.info "getting odds for the match #{match_id}"
-    get_match_opponents(match_id)
+    {winner, teams} = get_match_opponents(match_id)
+    if winner == nil do
+      IO.puts "no winner"
+    else
+      Odds.compute_with_winner(teams, winner)
+    end
+
   end
 
   defp get_match_opponents(match_id) do
     match = Api.get!("/matches/#{match_id}").body
 
-    for opponent <- match["opponents"] do
-      Team.new(opponent["opponent"]["name"], opponent["opponent"]["id"])
-    end
+    game = Enum.at(match["games"], 0)
+    opponents = match["opponents"]
+
+    {
+      game["winner"]["id"],
+      for opponent <- opponents do
+        Team.new(opponent["opponent"]["name"], opponent["opponent"]["id"])
+      end
+    }
   end
 
 end
