@@ -21,6 +21,7 @@ defmodule Panda do
     - id: match identifier
     - name: match name
   """
+  @spec upcoming_matches(integer, integer) :: List.t
   def upcoming_matches(page \\ 1, per_page \\ 5) do
     Logger.info "retrieving upcoming [#{per_page}] matches starting at [#{page}]"
     try do
@@ -35,29 +36,30 @@ defmodule Panda do
   @doc """
   return odds for the given match.
   """
+  @spec odds_for_match(integer) :: %{String => number, String => number}
   def odds_for_match(match_id) do
     Logger.info "getting odds for the match #{match_id}"
-    {winner, teams} = get_match_opponents(match_id)
-    if winner == nil do
-      Odds.compute(teams)
-    else
-      Odds.compute_with_winner(teams, winner)
-    end
-
-  end
-
-  defp get_match_opponents(match_id) do
     match = Api.get!("/matches/#{match_id}").body
 
-    game = Enum.at(match["games"], 0)
-    opponents = match["opponents"]
+    teams = get_match_opponents(match)
+    if match["winner_id"] == nil do
+      Odds.compute(teams)
+    else
+      Odds.compute_with_winner(teams, match["winner_id"])
+    end
+  end
 
-    {
-      game["winner"]["id"],
-      for opponent <- opponents do
-        Team.new(opponent["opponent"]["name"], opponent["opponent"]["id"])
-      end
-    }
+#  @doc """
+#  get opponents of a given match as Team structures
+#
+#  input: match map
+#  output: list of teams
+#  """
+  @spec get_match_opponents(Map) :: List
+  defp get_match_opponents(match) do
+    for opponent <- match["opponents"] do
+      %Team{name: opponent["opponent"]["name"], id: opponent["opponent"]["id"]}
+    end
   end
 
 end
