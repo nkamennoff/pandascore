@@ -37,14 +37,21 @@ defmodule Odds do
   def compute(teams) do
     team1 = List.first(teams)
     team2 = List.last(teams)
-    p_team2_wins_over_team1 = get_probabilities(team2.id, team1.id)
+    p_team1_wins_over_team2 = get_probabilities(team1.id, team2.id)
+    Logger.debug "historical ratio of #{team1.name} over #{team2.name} is #{p_team1_wins_over_team2}"
+    p_team2_wins_over_team1 = 1 - p_team1_wins_over_team2
     Logger.debug "historical ratio of #{team2.name} over #{team1.name} is #{p_team2_wins_over_team1}"
     p_team1 = get_probabilities(team1.id)
     Logger.debug "historical ratio of victories for #{team1.name} is #{p_team1}"
     p_team2 = get_probabilities(team2.id)
     Logger.debug "historical ratio of victories for #{team2.name} is #{p_team2}"
-    team1_odds = p_team2_wins_over_team1 * p_team1 / p_team2 * 100
-    %{team1.name => team1_odds, team2.name => 100 - team1_odds}
+    if (p_team1_wins_over_team2 == 0) do
+      team1_odds = p_team2_wins_over_team1 * p_team1 / p_team2 * 100
+      %{team1.name => team1_odds, team2.name => 100 - team1_odds}
+    else
+      team2_odds = p_team1_wins_over_team2 * p_team2 / p_team1 * 100
+      %{team1.name => 100 - team2_odds, team2.name => team2_odds}
+    end
   end
 
 #  @doc """

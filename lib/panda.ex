@@ -38,9 +38,8 @@ defmodule Panda do
   """
   @spec odds_for_match(integer) :: %{String => number, String => number}
   def odds_for_match(match_id) do
-    Logger.info "getting odds for the match #{match_id}"
     match = Api.get!("/matches/#{match_id}").body
-
+    Logger.info "getting odds for the match #{match_id}: #{match["name"]}"
     teams = get_match_opponents(match)
     if match["winner_id"] == nil do
       Odds.compute(teams)
