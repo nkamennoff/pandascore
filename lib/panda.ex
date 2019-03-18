@@ -39,7 +39,7 @@ defmodule Panda do
     Logger.info "getting odds for the match #{match_id}"
     {winner, teams} = get_match_opponents(match_id)
     if winner == nil do
-      IO.puts "no winner"
+      Odds.compute(teams)
     else
       Odds.compute_with_winner(teams, winner)
     end
