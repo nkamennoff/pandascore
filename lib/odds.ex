@@ -8,6 +8,8 @@ defmodule Odds do
 
   require Logger
 
+  use Task
+
   @doc """
   The match has already ended, thus the winner has 100% chances to win the match.
   Note that we could have compute the odds prior to the match, but I am a bit lazy right now.
@@ -37,19 +39,22 @@ defmodule Odds do
   def compute(teams) do
     team1 = List.first(teams)
     team2 = List.last(teams)
-    p_team1_wins_over_team2 = get_probabilities(team1.id, team2.id)
-    Logger.debug "historical ratio of #{team1.name} over #{team2.name} is #{p_team1_wins_over_team2}"
+
+    task_t1_vs_t2 = Task.async(fn -> get_probabilities(team1.id, team2.id) end)
+    task_t1 = Task.async(fn -> get_probabilities(team1.id) end)
+    task_t2 = Task.async(fn -> get_probabilities(team2.id) end)
+
+    p_team1_wins_over_team2 = Task.await(task_t1_vs_t2)
     p_team2_wins_over_team1 = 1 - p_team1_wins_over_team2
-    Logger.debug "historical ratio of #{team2.name} over #{team1.name} is #{p_team2_wins_over_team1}"
-    p_team1 = get_probabilities(team1.id)
-    Logger.debug "historical ratio of victories for #{team1.name} is #{p_team1}"
-    p_team2 = get_probabilities(team2.id)
-    Logger.debug "historical ratio of victories for #{team2.name} is #{p_team2}"
-    if (p_team1_wins_over_team2 == 0) do
-      team1_odds = p_team2_wins_over_team1 * p_team1 / p_team2 * 100
+    p_team1 = Task.await(task_t1)
+    p_team2 = Task.await(task_t2)
+
+    team1_odds = p_team2_wins_over_team1 * p_team1 / p_team2 * 100
+    team2_odds = p_team1_wins_over_team2 * p_team2 / p_team1 * 100
+
+    if team1_odds > 0 and team1_odds < 100 do
       %{team1.name => team1_odds, team2.name => 100 - team1_odds}
     else
-      team2_odds = p_team1_wins_over_team2 * p_team2 / p_team1 * 100
       %{team1.name => 100 - team2_odds, team2.name => team2_odds}
     end
   end
